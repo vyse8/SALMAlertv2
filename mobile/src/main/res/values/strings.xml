@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">SALM Alert</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="heartRate">Heart Rate/Steps</string>
+    <string name="medReminder">Medication Reminder</string>
+</resources>

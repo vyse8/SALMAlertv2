@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">SALM Alert</string>
+    <string name="hello_round">Hello Round World!</string>
+    <string name="hello_square">Hello Square World!</string>
+    <string name="welcometext">Welcome to SALM-Alert</string>
+
+    <string name="heartRate_title">Heart Rate/Steps</string>
+    <string name="heartRate_text">Get a heart rate sensor reading.</string>
+
+    <string name="flashcards_title">Food</string>
+    <string name="flashcards_text">Navigate through common requests to assist in communication.</string>
+
+    <string name="emergencyAlert_title">Emergency Alert</string>
+    <string name="emergencyAlert_text">Notify the companion mobile app of an emergency.</string>
+
+    <string name="msg_sent">Message Sent.</string>
+</resources>
