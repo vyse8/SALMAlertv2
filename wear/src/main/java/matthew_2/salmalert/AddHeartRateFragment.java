@@ -3,10 +3,17 @@ package matthew_2.salmalert;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.support.wearable.view.DelayedConfirmationView;
+import android.util.FloatMath;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,38 +21,59 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 
+import com.google.android.gms.wearable.Wearable;
+
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-/**
- * Fragment that allows to add some notes to a book.
- * <p/>
- * Created by Simone Casagranda on 25/01/15.
- */
-public class AddHeartRateFragment extends Fragment implements DelayedConfirmationView.DelayedConfirmationListener {
 
-    /**
-     * Tag used for logging.
-     */
-    private static final String TAG_LOG = AddHeartRateFragment.class.getSimpleName();
+public class AddHeartRateFragment extends Fragment implements SensorEventListener {
 
-    /**
-     * Arguments params.
-     */
-    private static final String ARG_ID = "com.alchemiasoft.books.fragment.book.ID";
+    private static final float FALL_THRESHOLD = 1.1f;
+    private static final int FALL_WAIT_TIME_MS = 250;
 
-    /**
-     * Code use to request the free-form speech
-     */
-    private static final int REQUEST_NOTES_CODE = 23;
+    private SensorManager mSensorManager;
+    private Sensor mSensor;
+    private int mSensorType;
+    private long mFallTime = 0;
 
-    /**
-     * Timeout delay for confirmation.
-     */
-    private static final long DELAY_TIMEOUT = 2000L;
+    private static final String ARG_ID = "com.matthew2.salmAlert.fragment.med.ID";
 
-    /**
-     * Allows to build BookInfoCardFragment in an extensible way.
-     */
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        System.out.println(
+                "z = " + Float.toString(event.values[2]) + "\n"
+        );
+        if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            detectFall(event);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    private void detectFall(SensorEvent event) {
+        long now = System.currentTimeMillis();
+
+        if((now - mFallTime) > FALL_WAIT_TIME_MS) {
+            mFallTime = now;
+
+            float gX = event.values[0] / SensorManager.GRAVITY_EARTH;
+            float gY = event.values[1] / SensorManager.GRAVITY_EARTH;
+            float gZ = event.values[2] / SensorManager.GRAVITY_EARTH;
+
+            float gForce = FloatMath.sqrt(gX * gX + gY * gY + gZ * gZ);
+
+            if(gForce > FALL_THRESHOLD) {
+                System.out.println("Fall detected");
+                sendToast();
+            }
+
+        }
+    }
+
     public static final class Builder {
 
         private final Bundle mArgs = new Bundle();
@@ -66,82 +94,59 @@ public class AddHeartRateFragment extends Fragment implements DelayedConfirmatio
         }
     }
 
-    private DelayedConfirmationView mConfirmationView;
     private TextView mAddHeartRatesTextView;
 
-    private boolean mIsAnimating = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_add_heartrate, container, false);
-        mConfirmationView = (DelayedConfirmationView) view.findViewById(R.id.confirm_notes);
         mAddHeartRatesTextView = (TextView) view.findViewById(R.id.add_heartrate_label);
+        mSensorManager = (SensorManager) getActivity().getSystemService(Context.SENSOR_SERVICE);
+        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         return view;
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // The entire "screen" is listening for the click
+
+        Bundle args = getArguments();
+        if(args != null) {
+            mSensorType = args.getInt("sensorType");
+        }
+
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mIsAnimating) {
-                    mConfirmationView.setImageResource(R.drawable.ic_action_notes);
-                    mIsAnimating = false;
-                    return;
-                }
-                final Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                 Intent launchIntent = getActivity().getPackageManager().getLaunchIntentForPackage("com.google.android.apps.fitness");
                 startActivity(launchIntent);
-                //intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                //intent.putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.heartRate_title));
-                //startActivityForResult(intent, REQUEST_NOTES_CODE);
             }
         });
-        mConfirmationView.setTotalTimeMs(DELAY_TIMEOUT);
-        // Registering the listener triggered by the DelayedConfirmationView
-        mConfirmationView.setListener(this);
+
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        switch (requestCode) {
-            case REQUEST_NOTES_CODE:
-                if (resultCode == Activity.RESULT_OK) {
-                    final List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                    final String voiceNotes = results.get(0);
-                    mAddHeartRatesTextView.setText(voiceNotes);
-                    mIsAnimating = true;
-                    mConfirmationView.setImageResource(R.drawable.ic_full_cancel);
-                    mConfirmationView.start();
+    public void onResume() {
+        super.onResume();
+        mSensorManager.registerListener(this, mSensor, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mSensorManager.unregisterListener(this);
+    }
+
+    private void sendToast() {
+        if (MainWearActivity.nodeId != null) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MainWearActivity.client.blockingConnect(MainWearActivity.CONNECTION_TIME_OUT_MS, TimeUnit.MILLISECONDS);
+                    Wearable.MessageApi.sendMessage(MainWearActivity.client, MainWearActivity.nodeId, "The patient has fallen!", null);
+                    MainWearActivity.client.disconnect();
                 }
-                break;
-            default:
-                break;
+            }).start();
         }
-    }
-
-    @Override
-    public void onTimerFinished(View view) {
-        final Activity activity = getActivity();
-        if (activity == null) {
-            Log.e(TAG_LOG, "Fragment not attached anymore to the activity (Skipping action).");
-            return;
-        }
-        // Updating the book state
-        //final long bookId = getArguments().getLong(ARG_ID);
-        //final String notes = mAddHeartRatesTextView.getText().toString();
-        // Scheduling the job in on the BookService
-        //BookService.Invoker.get(activity).bookId(bookId).notes(notes).invoke();
-        // We want to close the wear app
-        activity.finish();
-    }
-
-    @Override
-    public void onTimerSelected(View view) {
-        mAddHeartRatesTextView.setText(R.string.heartRate_title);
-        mConfirmationView.reset();
     }
 }

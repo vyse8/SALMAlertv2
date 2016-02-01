@@ -10,11 +10,9 @@
     </style>
 
     <style name="ActionButton">
-        <!--<item name="circle_border_color">@color/blue_light</item>-->
         <item name="circle_border_color">@color/black</item>
         <item name="circle_border_width">@dimen/circle_border_width</item>
         <item name="circle_radius">@dimen/circle_radius</item>
-       <!-- <item name="circle_color">@color/background_action</item>-->
         <item name="circle_color">@color/black</item>
     </style>
 </resources>

@@ -1,8 +1,6 @@
 package matthew_2.salmalert;
 
-/**
- * Created by Matthew_2 on 1/13/2016.
- */
+
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Context;
@@ -34,9 +32,6 @@ public class GridPagerAdapter extends FragmentGridPagerAdapter {
         mContext = ctx;
 
         mRows = new ArrayList<GridPagerAdapter.Row>();
-        //mRows.add(new Row(cardFragment(R.string.heartRate_title, R.string.heartRate_text)));
-        //mRows.add(new Row(cardFragment(R.string.flashcards_title, R.string.flashcards_text)));
-        //mRows.add(new Row(cardFragment(R.string.emergencyAlert_title, R.string.emergencyAlert_text)));
         mRows.add(new Row(AddHeartRateFragment.Builder.create(0).build()));
         mRows.add(new Row(AddFlashcardsFragment.Builder.create(0).build()));
         mRows.add(new Row(AddEmergencyAlertFragment.Builder.create(0).build()));
@@ -69,10 +64,8 @@ public class GridPagerAdapter extends FragmentGridPagerAdapter {
     LruCache<Point, Drawable> mPageBackgrounds = new LruCache<Point, Drawable>(3) {
         @Override
         protected Drawable create(final Point page) {
-            // place bugdroid as the background at row 2, column 1
             if (page.y == 2 && page.x == 1) {
-                //int resid = R.drawable.bugdroid_large;
-                int resid = R.drawable.debug_background_5;
+                int resid = R.color.black;
                 new DrawableLoadingTask(mContext) {
                     @Override
                     protected void onPostExecute(Drawable result) {
@@ -94,7 +87,6 @@ public class GridPagerAdapter extends FragmentGridPagerAdapter {
         Resources res = mContext.getResources();
         CardFragment fragment =
                 CardFragment.create(res.getText(titleRes), res.getText(textRes));
-        // Add some extra bottom margin to leave room for the page indicator
         fragment.setCardMarginBottom(
                 res.getDimensionPixelSize(R.dimen.card_margin_bottom));
 
@@ -105,12 +97,8 @@ public class GridPagerAdapter extends FragmentGridPagerAdapter {
             R.color.black,
             R.color.black,
             R.color.black
-            //R.drawable.debug_background_1,
-            //R.drawable.debug_background_2,
-            //R.drawable.debug_background_3
     };
 
-    /** A convenient container for a row of fragments. */
     private class Row {
         final List<Fragment> columns = new ArrayList<Fragment>();
 
